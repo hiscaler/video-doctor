@@ -53,20 +53,34 @@ func (v *Video) Init(identity string) *Video {
 
 		v.RuntimeDir = filepath.Join(v.WorkDir, "runtime")
 		v.OutputDir = filepath.Join(v.WorkDir, "output")
+
+		// 创建 runtime 和 output 目录
+		dirs := [2]string{"runtime", "output"}
+		for _, dir := range dirs {
+			path := filepath.Join(v.WorkDir, dir)
+			println(path)
+			if !helpers.IsExist(path) {
+				os.Mkdir(path, os.ModePerm)
+			}
+		}
 	} else {
 		errors.New(configFile + " is not exists.")
 	}
 
 	return v
-
 }
 
 func (v *Video) SetFile(file string) *Video {
 	if helpers.IsExist(file) {
 		v.OriginalFile = file
-		v.TempFile = file
 		v.Filename = path.Base(v.OriginalFile)
 		v.FileExtension = path.Ext(v.Filename)
+		dstFile := filepath.Join(v.RuntimeDir, helpers.GenerateUniqueId()+v.FileExtension)
+		if _, err := helpers.CopyFile(dstFile, v.OriginalFile); err == nil {
+			v.TempFile = dstFile
+		} else {
+			errors.New("Copy original file to runtime directory error." + err.Error())
+		}
 	} else {
 		errors.New(file + "File not exists.")
 	}
