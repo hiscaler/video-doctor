@@ -1,4 +1,15 @@
 {
   "workflow": "contact,removeHeaderFooter",
-  "audioFile": "ad.mp3"
+  "voice": {
+    "file": "ad.mp3",
+    "startTime": 0,
+    "duration": 0
+  },
+  "watermark": [
+    "x=1055:y=32:w=168:h=90"
+  ],
+  "removeHeaderFooterSeconds": {
+    "header": 0,
+    "footer": 0
+  }
 }
