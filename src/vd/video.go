@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"fmt"
 	"io/ioutil"
+	"log"
 )
 
 type Video struct {
@@ -47,6 +48,7 @@ type Config struct {
 
 func (v *Video) Init(identity string) *Video {
 	v.WorkDir = filepath.Join(helpers.GetCurrentDirectory(), "videos", identity)
+	log.Printf("Work directory is %s", v.WorkDir)
 	identity = strings.Trim(identity, "")
 	c := config.New()
 	configFile, _ := filepath.Abs("src/configs/" + identity + ".json")
@@ -79,7 +81,7 @@ func (v *Video) Init(identity string) *Video {
 		dirs := [2]string{"runtime", "output"}
 		for _, dir := range dirs {
 			path := filepath.Join(v.WorkDir, dir)
-			println(path)
+			log.Printf("Create `%s` Directory", path)
 			if !helpers.IsExist(path) {
 				os.Mkdir(path, os.ModePerm)
 			}
@@ -139,12 +141,14 @@ func (v *Video) RemoveWatermark() *Video {
 	config := v.ProcessConfig.watermark
 	tempFile := v.tmpFile()
 	cmd := fmt.Sprintf("ffmpeg -i %s -vf delogo=%s %s", v.TempFile, config, tempFile)
+	log.Println(cmd)
 	v.ffmpegCommand(cmd)
 
 	return v
 }
 
 func (v *Video) Clean() {
+	log.Println("Clean `%s` files", v.RuntimeDir)
 	files, _ := ioutil.ReadDir(v.RuntimeDir)
 	for _, file := range files {
 		if file.IsDir() {
