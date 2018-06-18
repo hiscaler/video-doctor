@@ -148,13 +148,13 @@ func (v *Video) RemoveWatermark() *Video {
 }
 
 func (v *Video) Clean() {
-	log.Println("Clean `%s` files", v.RuntimeDir)
+	log.Printf("Clean `%s` files", v.RuntimeDir)
 	files, _ := ioutil.ReadDir(v.RuntimeDir)
 	for _, file := range files {
 		if file.IsDir() {
-			os.RemoveAll(file.Name())
+			os.RemoveAll(filepath.Join(v.RuntimeDir, file.Name()))
 		} else {
-			os.Remove(file.Name())
+			os.Remove(filepath.Join(v.RuntimeDir, file.Name()))
 		}
 	}
 }
