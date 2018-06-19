@@ -1,5 +1,5 @@
 // 助手类
-package helpers
+package filepath
 
 import (
 	"os"
@@ -7,10 +7,6 @@ import (
 	"os/exec"
 	"strings"
 	"io"
-	"crypto/md5"
-	"encoding/hex"
-	"encoding/base64"
-	"crypto/rand"
 )
 
 // Check file is exist
@@ -48,18 +44,4 @@ func CopyFile(dstName, srcName string) (Written int64, err error) {
 	}
 	defer dst.Close()
 	return io.Copy(dst, src)
-}
-
-func getMd5String(str string) string {
-	h := md5.New()
-	h.Write([]byte(str))
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-func GenerateUniqueId() string {
-	b := make([]byte, 48)
-	if _, err := io.ReadFull(rand.Reader, b); err != nil {
-		return ""
-	}
-	return getMd5String(base64.URLEncoding.EncodeToString(b))
 }
