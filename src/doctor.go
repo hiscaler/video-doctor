@@ -17,6 +17,6 @@ func main() {
 	identity := "test"
 	file := filepath.Join(workDirectory, "videos", "test", "demo.mp4")
 	v := new(vd.Video)
-	v.Init(identity).SetFile(file)
+	v.Init(identity).SetFile(file).Clean()
 	fmt.Println(v.TempFile)
 }
