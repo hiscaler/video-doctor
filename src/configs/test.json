@@ -11,5 +11,8 @@
   "removeHeaderFooterSeconds": {
     "header": 0,
     "footer": 0
+  },
+  "subtitles": {
+    "file": "subtiltes.srt"
   }
 }

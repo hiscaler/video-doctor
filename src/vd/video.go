@@ -46,6 +46,7 @@ type Config struct {
 	concatFiles               string
 	cutSecondsPer             int
 	removeHeaderFooterSeconds map[string]int
+	subtitlesFile             string
 }
 
 func (v *Video) Init(identity string) *Video {
@@ -74,6 +75,15 @@ func (v *Video) Init(identity string) *Video {
 		m["header"] = c.GetInt("removeHeaderFooterSeconds.header", 0)
 		m["footer"] = c.GetInt("removeHeaderFooterSeconds.footer", 0)
 		cfg.removeHeaderFooterSeconds = m
+		subtitlesFile := c.GetString("subtitles.title")
+		if len(subtitlesFile) > 0 {
+			if filepath.Ext(subtitlesFile) == "srt" {
+				subtitlesFile = filepath.Join(v.WorkDir, subtitlesFile)
+			} else {
+				log.Println("Subtitles file extension is not `srt`")
+			}
+		}
+		cfg.subtitlesFile = subtitlesFile
 		v.ProcessConfig = *cfg
 
 		v.RuntimeDir = filepath.Join(v.WorkDir, "runtime")
@@ -172,6 +182,23 @@ func (v *Video) RemoveHeaderFooter() *Video {
 			v.ffmpegCommand(command)
 			v.TempFile = tempFile
 		}
+	}
+
+	return v
+}
+
+// Add video subtitles
+func (v *Video) AddSubtitles() *Video {
+	subtitlesFile := v.ProcessConfig.subtitlesFile
+	if len(subtitlesFile) > 0 && filepathHelper.IsExist(subtitlesFile) {
+		tempFile := v.generateTempFilePath()
+		// "ffmpeg -i \"{input_file}\" -ss 00:00:00.000 -to 99:00:00.000 -vf \"subtitles='{subtitles_file}:force_style=Fontsize=24,PrimaryColour=&Hffffff&'\",scale=704:368,pad=704:368:0:0 -vcodec libx264 -crf 22 -r 23.976  -acodec aac -ac 2 -ar 44.1k -b:a 128k \"{output_file}\""
+		command := fmt.Sprintf("ffmpeg -i \"%s\" -ss 00:00:00.000 -to 99:00:00.000 -vf \"subtitles='%s:force_style=Fontsize=24,PrimaryColour=&Hffffff&'\",scale=704:368,pad=704:368:0:0 -vcodec libx264 -crf 22 -r 23.976  -acodec aac -ac 2 -ar 44.1k -b:a 128k \"%s\"", v.TempFile, subtitlesFile, tempFile)
+		log.Println(command)
+		v.ffmpegCommand(command)
+		v.TempFile = tempFile
+	} else {
+		log.Println("Subtitles file is not exists, ignore `AddSubtitles` action.")
 	}
 
 	return v
