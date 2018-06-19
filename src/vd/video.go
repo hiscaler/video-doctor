@@ -6,12 +6,14 @@ import (
 	"path"
 	"errors"
 	"path/filepath"
-	"helpers"
 	"os"
 	"os/exec"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"helpers/datetime"
+	"helpers/util"
+	filepathHelper "helpers/filepath"
 )
 
 type Video struct {
@@ -47,12 +49,12 @@ type Config struct {
 }
 
 func (v *Video) Init(identity string) *Video {
-	v.WorkDir = filepath.Join(helpers.GetCurrentDirectory(), "videos", identity)
+	v.WorkDir = filepath.Join(filepathHelper.GetCurrentDirectory(), "videos", identity)
 	log.Printf("Work directory is %s", v.WorkDir)
 	identity = strings.Trim(identity, "")
 	c := config.New()
 	configFile, _ := filepath.Abs("src/configs/" + identity + ".json")
-	if helpers.IsExist(configFile) {
+	if filepathHelper.IsExist(configFile) {
 		c.Load(configFile)
 		cfg := new(Config)
 		cfg.workflow = c.GetString("workflow", "")
@@ -82,7 +84,7 @@ func (v *Video) Init(identity string) *Video {
 		for _, dir := range dirs {
 			path := filepath.Join(v.WorkDir, dir)
 			log.Printf("Create `%s` Directory", path)
-			if !helpers.IsExist(path) {
+			if !filepathHelper.IsExist(path) {
 				os.Mkdir(path, os.ModePerm)
 			}
 		}
@@ -94,17 +96,18 @@ func (v *Video) Init(identity string) *Video {
 }
 
 // 生成临时文件名
-func (v *Video) tmpFile() string {
-	return filepath.Join(v.RuntimeDir, helpers.GenerateUniqueId()+v.FileExtension)
+func (v *Video) generateTempFilePath() string {
+	return filepath.Join(v.RuntimeDir, util.GenerateUniqueId()+v.FileExtension)
 }
 
 func (v *Video) SetFile(file string) *Video {
-	if helpers.IsExist(file) {
+	if filepathHelper.IsExist(file) {
 		v.OriginalFile = file
 		v.Filename = path.Base(v.OriginalFile)
 		v.FileExtension = path.Ext(v.Filename)
-		dstFile := v.tmpFile()
-		if _, err := helpers.CopyFile(dstFile, v.OriginalFile); err == nil {
+		v.Information = VideoInformation{}
+		dstFile := v.generateTempFilePath()
+		if _, err := filepathHelper.CopyFile(dstFile, v.OriginalFile); err == nil {
 			v.TempFile = dstFile
 		} else {
 			errors.New("Copy original file to runtime directory error." + err.Error())
@@ -139,10 +142,37 @@ func (v *Video) ffmpegCommand(cmd string) {
 // 遮盖水印
 func (v *Video) RemoveWatermark() *Video {
 	config := v.ProcessConfig.watermark
-	tempFile := v.tmpFile()
+	tempFile := v.generateTempFilePath()
 	cmd := fmt.Sprintf("ffmpeg -i %s -vf delogo=%s %s", v.TempFile, config, tempFile)
 	log.Println(cmd)
 	v.ffmpegCommand(cmd)
+
+	return v
+}
+
+// Remove vidoe header and footer
+func (v *Video) RemoveHeaderFooter() *Video {
+	config := v.ProcessConfig.removeHeaderFooterSeconds
+	duration := v.Information.duration
+	if duration > 0 {
+		header := config["header"]
+		if header < 0 || header < duration {
+			header = 0
+		}
+
+		footer := config["footer"]
+		if footer < 0 || footer >= duration {
+			footer = 0
+		}
+		if header > 0 || footer > 0 {
+			// ffmpeg -ss {begin_time} -t {end_time} -i {original_file} -vcodec copy -acodec copy {output_file}
+			tempFile := v.generateTempFilePath()
+			command := fmt.Sprintf("ffmpeg -ss %s -t %s -i %s -vcodec copy -acodec copy %s", datetime.Timedelta(header), datetime.Timedelta(footer), v.TempFile, tempFile)
+			log.Println(command)
+			v.ffmpegCommand(command)
+			v.TempFile = tempFile
+		}
+	}
 
 	return v
 }
