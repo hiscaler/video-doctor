@@ -150,7 +150,7 @@ func (v *Video) RemoveWatermark() *Video {
 	return v
 }
 
-// Remove vidoe header and footer
+// Remove video header and footer
 func (v *Video) RemoveHeaderFooter() *Video {
 	config := v.ProcessConfig.removeHeaderFooterSeconds
 	duration := v.Information.duration
